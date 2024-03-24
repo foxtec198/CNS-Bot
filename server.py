@@ -4,6 +4,7 @@ from pyodbc import connect
 from pandas import read_sql
 from dataframe_image import export
 from time import strftime as st
+from os import system
 
 API  = '7134052176:AAHfgBxarhx3wj5N8sTtFNRawuWt3PaXv0k'
 bot = telebot.TeleBot(API)
@@ -30,16 +31,8 @@ class CNS:
             valor = msg.text.split()
             try:
                 CR = valor[1]
-                if valor[2]: 
-                    Tarefa = valor[2]
-                    if valor[3]: day = valor[3]
-                    if valor[4]: month = valor[4]
-                    if valor[5]: day = valor[5]
-                else: 
-                    Tarefa = ''
-                    if valor[2]: day = valor[2]
-                    if valor[3]: month = valor[3]
-                    if valor[4]: day = valor[4]
+                if len(valor) > 1: Tarefa = valor[2]
+                else: Tarefa = ''
 
                 match tipo:
                     case 1: consCr = f"""select T.Nome, COUNT(T.Nome) as 'Total'
@@ -94,5 +87,9 @@ def CNS_consultar(msg):
 def echo_message(message):
     bot.reply_to(message, msgP.diversos)
 
-print('CNS-Bot em execução!')
-bot.infinity_polling()  
+try: system('cls')
+except: system('clear')
+
+print('CNS-Bot em execução!...')
+bot.infinity_polling()
+

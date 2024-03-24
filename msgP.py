@@ -9,7 +9,7 @@ Caso queira pra usar a data personalizada, coloque dia mes ou ano separado como 
 
 boas_vindas = f'''
 Olá $$USER seja bem-vindo ao CNS.
-Para realizar uma consulta basta as consultas abaixo!
+Para realizar uma consulta basta usar os comandos abaixo!
 {help}
 '''
 
