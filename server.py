@@ -67,4 +67,5 @@ def CNS_consultar(msg):
 def echo_message(message):
     bot.reply_to(message, msgP.diversos)
 
+print('CNS-Bot em execução!')
 bot.infinity_polling()  
