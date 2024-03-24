@@ -19,28 +19,49 @@ class CNS:
             bot.reply_to(msg, f"""Conexão Invalida: {error}""")
             return False
 
-    def consultar(self, msg, day=None, month=None, year=None):
+    def consultar(self, msg, tipo=None):
         now = st('%X - %x')
-        if not day: day = st('%d')
-        if not month: month =st('%m')
-        if not year: year = st('%Y')
+        day = st('%d')
+        month =st('%m')
+        year = st('%Y')
 
         c = self.Conn(msg, 'guilherme.breve','84584608@Gui')
         if c:
             valor = msg.text.split()
             try:
                 CR = valor[1]
-                bot.reply_to(msg, f'Consultando {CR}...')
+                if valor[2]: 
+                    Tarefa = valor[2]
+                    if valor[3]: day = valor[3]
+                    if valor[4]: month = valor[4]
+                    if valor[5]: day = valor[5]
+                else: 
+                    Tarefa = ''
+                    if valor[2]: day = valor[2]
+                    if valor[3]: month = valor[3]
+                    if valor[4]: day = valor[4]
 
-                consCr = f"""select T.Nome, COUNT(T.Nome) as 'Total'
+                match tipo:
+                    case 1: consCr = f"""select T.Nome, COUNT(T.Nome) as 'Total'
                 from Tarefa T
                 inner join DW_Vista.dbo.DM_ESTRUTURA ES
                     on ES.Id_Estrutura = T.EstruturaId
                 WHERE Es.CRNo = {CR}
+                AND T.Nome LIKE '%{Tarefa}%'
                 AND DAY(TerminoReal) = {day}
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
                 GROUP BY T.Nome"""
+                    case 2: consCr = f"""select T.Nome, COUNT(T.Nome) as 'Total'
+                from Tarefa T
+                inner join DW_Vista.dbo.DM_ESTRUTURA ES
+                    on ES.Id_Estrutura = T.EstruturaId
+                WHERE Es.CRNo = {CR}
+                AND T.Nome LIKE '%{Tarefa}%'
+                AND MONTH(TerminoReal) = {month}
+                AND YEAR(TerminoReal) = {year}
+                GROUP BY T.Nome"""
+                        
                 df = read_sql(consCr, self.conn)
                 export(df, 'temp.png')
                 
@@ -52,15 +73,21 @@ class CNS:
 cns = CNS()
 
 # Inicio
-@bot.message_handler(commands=['start'])             
+@bot.message_handler(commands=['start','começar','init'])             
 def CNS_boasvindas(msg):
     bot.reply_to(msg, msgP.boas_vindas.replace('$$USER', msg.from_user.first_name))
 
-# Consultar
-@bot.message_handler(commands=['consultar'])
+# Consultar Total de Tarefas Dia
+@bot.message_handler(commands=['total','const'])
 def CNS_consultar(msg):
     bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg)
+    cns.consultar(msg, tipo=1)
+
+# Consultar Total de Tarefas Mês
+@bot.message_handler(commands=['totalm', 'constm'])
+def CNS_consultar(msg):
+    bot.reply_to(msg, 'Só um instante')
+    cns.consultar(msg, tipo=2)
 
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)
