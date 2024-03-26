@@ -83,7 +83,7 @@ class CNS:
                     on Es.Id_Estrutura = T.EstruturaId
                 INNER JOIN DW_Vista.dbo.DM_CR cr
                     on cr.ID_CR = Es.Id_CR
-                WHERE cr.Gerente LIKE '%{Gerente}%'
+                WHERE cr.Gerente = '{Gerente}'
                 AND DAY(TerminoReal) = {day}
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
@@ -98,7 +98,7 @@ class CNS:
                     on Es.Id_Estrutura = T.EstruturaId
                 INNER JOIN DW_Vista.dbo.DM_CR cr
                     on cr.ID_CR = Es.Id_CR
-                WHERE cr.Gerente LIKE '%{Gerente}%'
+                WHERE cr.Gerente = '{Gerente}'
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
                 GROUP BY T.EstruturaNivel2
