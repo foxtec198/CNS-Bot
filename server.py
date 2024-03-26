@@ -87,6 +87,7 @@ class CNS:
                 AND DAY(TerminoReal) = {day}
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
+                AND T.Expirada > 0
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
@@ -101,6 +102,7 @@ class CNS:
                 WHERE cr.Gerente = '{Gerente}'
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
+                AND T.Expirada > 0
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
