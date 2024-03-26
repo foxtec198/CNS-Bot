@@ -11,14 +11,19 @@ bot = telebot.TeleBot(API)
 
 # Conectar
 class CNS:
-    def Conn(self, msg, user, pwd, server='10.56.6.56',db='Vista_Replication_PRD'):
+    def Conn(
+            self, msg, 
+            user, pwd, 
+            server='10.56.6.56',
+            db='Vista_Replication_PRD'
+            ):
         try:
-            self.conn = connect(f'DRIVER=SQL Server;SERVER={server};UID={user};PWD={pwd};DATABASE={db}')
-            bot.reply_to(msg, 'Conexão Ativa 🟢')
-            return True
+                self.conn = connect(f'DRIVER=SQL Server;SERVER={server};UID={user};PWD={pwd};DATABASE={db}')
+                bot.reply_to(msg, 'Conexão Ativa 🟢')
+                return True
         except Exception as error:
-            bot.reply_to(msg, f"""Conexão Inválida 🔴: \n Erro: {error}""")
-            return False
+                bot.reply_to(msg, f"""Conexão Inválida 🔴: \n Erro: {error}""")
+                return False
 
     def consultar(self, msg, tipo=None):
         now = st('%X - %x')
@@ -36,8 +41,10 @@ class CNS:
                             bot.reply_to(msg, 'Digite o CR antes de Consultar!')
                         if tipo >= 3 and tipo <= 4:
                             bot.reply_to(msg, 'Digite a GERENCIA antes de Consultar!')
-                    case 2: Att = ''
-                    case 3: Att = valor[2]
+                    case 2:
+                        Att = valor[1]
+
+                Gerente = Att.replace('_', ' ')
                 CR = valor[1]
 
                 match tipo:
@@ -46,7 +53,7 @@ class CNS:
                 FROM Tarefa T
                 INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
                     on ES.Id_Estrutura = T.EstruturaId
-                WHERE Es.CRNo = 11930
+                WHERE Es.CRNo = {CR}
                 AND T.Nome LIKE '%{Att}%'
                 AND T.Status = 85
                 AND T.Expirada = 0
@@ -60,7 +67,7 @@ class CNS:
                 FROM Tarefa T
                 INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
                     on ES.Id_Estrutura = T.EstruturaId
-                WHERE Es.CRNo = 11930
+                WHERE Es.CRNo = {CR}
                 AND T.Nome LIKE '%{Att}%'
                 AND T.Status = 85
                 AND T.Expirada = 0
@@ -76,7 +83,7 @@ class CNS:
                     on Es.Id_Estrutura = T.EstruturaId
                 INNER JOIN DW_Vista.dbo.DM_CR cr
                     on cr.ID_CR = Es.Id_CR
-                WHERE cr.Gerente LIKE '%{Att}%'
+                WHERE cr.Gerente LIKE '%{Gerente}%'
                 AND DAY(TerminoReal) = {day}
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
@@ -91,19 +98,19 @@ class CNS:
                     on Es.Id_Estrutura = T.EstruturaId
                 INNER JOIN DW_Vista.dbo.DM_CR cr
                     on cr.ID_CR = Es.Id_CR
-                WHERE cr.Gerente LIKE '%{Att}%'
+                WHERE cr.Gerente LIKE '%{Gerente}%'
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
                         
-                        
                 df = read_sql(consCr, self.conn)
-                export(df, 'temp.png')
+                export(df, 'temp.png', max_rows=90, max_cols=10)
                 
                 img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
-                bot.reply_to(img, f'Segue consulta referente ao contrato {CR} na data {now}')
+                if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} na data {now}')
+                if tipo==3 or tipo==4: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} na data {now}')
 
             except Exception as error: bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
 
