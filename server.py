@@ -26,7 +26,7 @@ class CNS:
                 return False
 
     def consultar(self, msg, tipo=None):
-        now = st('%X - %x')
+        now = st('%x - %X')
         day = st('%d')
         month =st('%m')
         year = st('%Y')
@@ -109,8 +109,8 @@ class CNS:
                 export(df, 'temp.png', max_rows=90, max_cols=10)
                 
                 img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
-                if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} na data {now}')
-                if tipo==3 or tipo==4: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} na data {now}')
+                if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} no periodo {now}')
+                if tipo==3 or tipo==4: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
 
             except Exception as error: bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
 
