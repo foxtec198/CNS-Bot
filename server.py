@@ -51,12 +51,14 @@ class CNS:
                     case 1: consCr = f"""SELECT 
                 T.Nome, COUNT(T.Nome) as 'Total'
                 FROM Tarefa T
+                INNER JOIN Recurso R
+                    on R.CodigoHash = T.ModificadoPorHash
                 INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
                     on ES.Id_Estrutura = T.EstruturaId
                 WHERE Es.CRNo = {CR}
+                AND R.Nome NOT IN ('Sistema')
                 AND T.Nome LIKE '%{Att}%'
                 AND T.Status = 85
-                AND T.Expirada = 0
                 AND DAY(TerminoReal) = {day}
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
@@ -65,12 +67,14 @@ class CNS:
                     case 2: consCr = f"""SELECT 
                 T.Nome, COUNT(T.Nome) as 'Total'
                 FROM Tarefa T
+                INNER JOIN Recurso R
+                    on R.CodigoHash = T.ModificadoPorHash
                 INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
                     on ES.Id_Estrutura = T.EstruturaId
                 WHERE Es.CRNo = {CR}
+                AND R.Nome NOT IN ('Sistema')
                 AND T.Nome LIKE '%{Att}%'
                 AND T.Status = 85
-                AND T.Expirada = 0
                 AND MONTH(TerminoReal) = {month}
                 AND YEAR(TerminoReal) = {year}
                 GROUP BY T.Nome
