@@ -13,7 +13,8 @@ class QRCode:
     def __init__(self, user, pwd, server):
         b = BackEnd()
         c = b.connect_db(user, pwd, server)
-        if c == 'Conectado': self.conn = b.conn
+        if c == 'Conectado': 
+            self.conn = b.conn
     @cache
     def get_empresas(self, empresas):
         match empresas:

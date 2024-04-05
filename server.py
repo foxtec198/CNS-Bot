@@ -13,8 +13,8 @@ bot = telebot.TeleBot(API)
 class CNS:
     def connect(self, user = 'guilherme.breve', pwd='84584608@Gui', server='10.56.6.56'):
         try:
-            qr = QRCode(user, pwd, server)
-            self.conn = qr.conn
+            self.qr = QRCode(user, pwd, server)
+            self.conn = self.qr.conn
             return True
         except: return False
 
