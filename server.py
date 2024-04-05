@@ -5,8 +5,6 @@ from pandas import read_sql_query
 from dataframe_image import export
 from time import strftime as st
 from os import system
-from urllib import parse
-from backEnd import BackEnd
 from qrcode import QRCode
 
 API  = '7134052176:AAHfgBxarhx3wj5N8sTtFNRawuWt3PaXv0k'
@@ -15,8 +13,11 @@ bot = telebot.TeleBot(API)
 # Conectar
 class CNS:
     def Conn(self, msg, user = 'guilherme.breve', pwd='84584608@Gui', server='10.56.6.56'):
-        self.qr = QRCode(user, pwd, server)
-        self.conn = self.qr.conn
+        try:
+            self.qr = QRCode(user, pwd, server)
+            self.conn = self.qr.conn
+            return True
+        except: return False
 
     def consultar(self, msg, tipo=None):
         now = st('%x - %X')
@@ -24,7 +25,7 @@ class CNS:
         month =st('%m')
         year = st('%Y')
 
-        c = self.Conn(msg, 'guilherme.breve','84584608@Gui')
+        c = self.Conn(msg)
 
         if c:
             valor = msg.text.split()
@@ -152,7 +153,7 @@ class CNS:
                 ORDER BY [Total] DESC
                 """
                         
-                df = read_sql_query(consCr, self.conn)
+                df = read_sql_query(consCr, self.qr.conn)
                 export(df, 'temp.png', max_rows=90, max_cols=10)
                 
                 img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
