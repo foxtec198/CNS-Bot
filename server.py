@@ -6,23 +6,17 @@ from dataframe_image import export
 from time import strftime as st
 from os import system
 from urllib import parse
+from backEnd import BackEnd
+from qrcode import QRCode
 
 API  = '7134052176:AAHfgBxarhx3wj5N8sTtFNRawuWt3PaXv0k'
 bot = telebot.TeleBot(API)
 
 # Conectar
 class CNS:
-    def Conn(self, msg, user, pwd, server='10.56.6.56', db='Vista_Replication_PRD'):
-        user = parse.quote_plus(user)
-        pwd = parse.quote_plus(pwd)
-        try:
-            self.engine = create_engine(f"mssql+pyodbc://{user}:{pwd}@{server}/{db}?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes")
-            self.conn = self.engine.connect()
-            bot.reply_to(msg, 'Conexão Ativa 🟢')
-            return True
-        except Exception as error:
-            bot.reply_to(msg, f"""Conexão Inválida 🔴: \n Erro: {error}""")
-            return False
+    def Conn(self, msg, user = 'guilherme.breve', pwd='84584608@Gui', server='10.56.6.56'):
+        self.qr = QRCode(user, pwd, server)
+        self.conn = self.qr.conn
 
     def consultar(self, msg, tipo=None):
         now = st('%x - %X')
@@ -163,9 +157,27 @@ class CNS:
                 
                 img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
                 if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} no periodo {now}')
-                if tipo >= 3: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
+                elif tipo >= 3: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
 
             except Exception as error: bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
+
+    def cns_qrcode(self, msg):
+        self.Conn(msg)
+        msg2 = msg.text.split()
+        param = msg2[1].split(':')
+        CR = param[0]
+        if len(param) >= 2: Nivel = param[1]
+        else: Nivel = 3
+        if len(param) == 3: Empresa = param[2]
+        else: Empresa = 'Grupo GPS'
+        bot.reply_to(msg, f'Criando QRCode do contrato {CR}, no Nivel {Nivel}, com a logo da empresa {Empresa}, Um instante. ✅')
+        try:
+            self.qr.gerar(CR, 'LIKE','>=', Nivel, Empresa, 'Locais')
+            nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
+            arquivo = open(nomeArquivo, 'rb')
+            arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
+            bot.reply_to(arq, f'Segue QRCodes - {self.qr.nomeCR}')
+        except Exception as e: bot.reply_to(msg, str(e))
 
 cns = CNS()
 
@@ -214,6 +226,12 @@ def help_us(msg):
 @bot.message_handler(commands=['help','ajuda'])
 def help_us(msg):
     bot.reply_to(msg, msgP.help)
+
+@bot.message_handler(commands=['qrcode', 'qr'])
+def qrcode(msg):
+    cns.cns_qrcode(msg)
+
+
 
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)
