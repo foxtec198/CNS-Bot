@@ -1,6 +1,5 @@
 import telebot
 import msgP
-from sqlalchemy import create_engine
 from pandas import read_sql_query
 from dataframe_image import export
 from time import strftime as st
@@ -12,10 +11,10 @@ bot = telebot.TeleBot(API)
 
 # Conectar
 class CNS:
-    def Conn(self, msg, user = 'guilherme.breve', pwd='84584608@Gui', server='10.56.6.56'):
+    def connect(self, user = 'guilherme.breve', pwd='84584608@Gui', server='10.56.6.56'):
         try:
-            self.qr = QRCode(user, pwd, server)
-            self.conn = self.qr.conn
+            qr = QRCode(user, pwd, server)
+            self.conn = qr.conn
             return True
         except: return False
 
@@ -25,9 +24,7 @@ class CNS:
         month =st('%m')
         year = st('%Y')
 
-        c = self.Conn(msg)
-
-        if c:
+        if self.connect():
             valor = msg.text.split()
             print(valor)
             try:
@@ -153,27 +150,28 @@ class CNS:
                 ORDER BY [Total] DESC
                 """
                         
-                df = read_sql_query(consCr, self.qr.conn)
+                df = read_sql_query(consCr, self.conn)
                 export(df, 'temp.png', max_rows=90, max_cols=10)
                 
                 img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
                 if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} no periodo {now}')
                 elif tipo >= 3: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
 
-            except Exception as error: bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
+            except Exception as error: 
+                bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
 
     def cns_qrcode(self, msg):
-        self.Conn(msg)
+        self.connect()
         msg2 = msg.text.split()
         param = msg2[1].split(':')
-        CR = param[0]
+        cr = param[0]
         if len(param) >= 2: Nivel = param[1]
         else: Nivel = 3
         if len(param) == 3: Empresa = param[2]
         else: Empresa = 'Grupo GPS'
-        bot.reply_to(msg, f'Criando QRCode do contrato {CR}, no Nivel {Nivel}, com a logo da empresa {Empresa}, Um instante. ✅')
+        bot.reply_to(msg, f'Criando QRCode do contrato {cr}, no Nivel {Nivel}, com a logo da empresa {Empresa}, Um instante. ✅')
         try:
-            self.qr.gerar(CR, 'LIKE','>=', Nivel, Empresa, 'Locais')
+            self.qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais')
             nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
             arquivo = open(nomeArquivo, 'rb')
             arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
