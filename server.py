@@ -182,7 +182,7 @@ class CNS:
 
     def cons_visita(self, msg):
         self.data() # Atualiza as datas 
-        param = msg.split()
+        param = msg.text.split()
         if self.connect():
             match len(param):
                 case 1: 
