@@ -29,7 +29,6 @@ class CNS:
 
         if self.connect():
             valor = msg.text.split()
-            print(valor)
             try:
                 match len(valor):
                     case 1: 
