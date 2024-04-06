@@ -1,15 +1,15 @@
-SELECT 
-T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
-FROM Tarefa T
-INNER JOIN Recurso R
-    on R.CodigoHash = T.ModificadoPorHash
-INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
-    on ES.Id_Estrutura = T.EstruturaId
-WHERE Es.CRNo = 11930
-AND R.Nome NOT IN ('Sistema')
-AND T.Nome LIKE '%%'
-AND T.Status = 85
-AND MONTH(TerminoReal) = 03
-AND YEAR(TerminoReal) = 2024
-GROUP BY T.Nome, R.Nome
-ORDER BY [Total] DESC
+SELECT R.Nome, COUNT(R.Nome) as 'Total'
+FROM Tarefa T with(nolock)
+INNER JOIN Recurso R with(nolock)
+    on R.CodigoHash = T.FinalizadoPorHash
+INNER JOIN dw_vista.dbo.DM_ESTRUTURA Es with(nolock)
+    on Es.Id_Estrutura = T.EstruturaId
+INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
+    on cr.Id_CR = Es.Id_CR
+WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
+AND T.Nome LIKE '%Visita%'
+AND R.Nome <> 'Sistema'
+AND MONTH(T.TerminoReal) = 03
+AND YEAR(T.TerminoReal) = 2024
+GROUP BY R.Nome
+ORDER BY COUNT(R.Nome) DESC

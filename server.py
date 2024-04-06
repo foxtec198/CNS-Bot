@@ -196,17 +196,15 @@ class CNS:
                     INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
                         on cr.Id_CR = Es.Id_CR
                     WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
-                    AND T.Nome LIKE '%Visita%'
+                    AND T.Nome LIKE '%Visita %'
                     AND R.Nome <> 'Sistema'
                     AND MONTH(T.TerminoReal) = {self.month}
                     AND YEAR(T.TerminoReal) = {self.year}
                     GROUP BY R.Nome
                     ORDER BY COUNT(R.Nome) DESC"""
                 case 2: 
-                    data = param.split('_')
-                    day = data[0]
-                    month = data[1]
-                    bot.reply_to(msg, f'Consultando visitas referente a data {data}!')
+                    month = param[1]
+                    bot.reply_to(msg, f'Consultando visitas referente a data {month}!')
                     cons = f"""SELECT R.Nome, COUNT(R.Nome) as 'Total'
                     FROM Tarefa T with(nolock)
                     INNER JOIN Recurso R with(nolock)
@@ -216,9 +214,8 @@ class CNS:
                     INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
                         on cr.Id_CR = Es.Id_CR
                     WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
-                    AND T.Nome LIKE '%Visita%'
+                    AND T.Nome LIKE '%Visita %'
                     AND R.Nome <> 'Sistema'
-                    AND DAY(T.TerminoReal) = {day}
                     AND MONTH(T.TerminoReal) = {month}
                     AND YEAR(T.TerminoReal) = {self.year}
                     GROUP BY R.Nome
