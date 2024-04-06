@@ -230,8 +230,6 @@ def help_us(msg):
 def qrcode(msg):
     cns.cns_qrcode(msg)
 
-
-
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):

@@ -89,13 +89,14 @@ class QRCode:
             es = estrutura.to_dict()
             for i in es['Descricao']:
                 local = es['Descricao'][i]
+                superior = es['Superior'][i]
                 link = self.get_link_estrutura(es['Id'][i])
                 qr = es['QRCode'][i]
-                self.makePng(nomeCR, local, qr, link, i, empresa)
+                self.makePng(nomeCR, local, qr, link, i, empresa, superior)
                 self.merge(nomeCR)
             rmtree('src/temp')
     
-    def makePng(self, crNome, local, qr, link, cont, empresas):
+    def makePng(self, crNome, local, qr, link, cont, empresas, superior):
             # Gera os QR Codes
             qrlocal = make(qr)
             qrlast = make(link)
@@ -120,7 +121,7 @@ class QRCode:
             # TEXTO - Nome Local
             textImg = ImageDraw.Draw(coresImg)
             fnt = ImageFont.truetype('arial', 20)
-            txt = f'{local[:40]}\n{local[40:]}'
+            txt = f'{superior} > {local[:20]}\n{local[20:]}'
             textImg.text((450, 210), txt, font=fnt, fill='black', align='center')
 
             # Cola as propriedas na imagem final

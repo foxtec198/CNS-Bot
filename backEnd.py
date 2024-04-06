@@ -8,7 +8,7 @@ class BackEnd:
         server = quote_plus(server)
         db = quote_plus('Vista_Replication_PRD')
         try:
-            engine = create_engine(f"mssql+pyodbc://{user}:{pwd}@{server}/{db}?driver=ODBC+Driver+17+for+SQL+Server")
+            engine = create_engine(f"mssql+pyodbc://{user}:{pwd}@{server}/{db}?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes")
             self.conn = engine.connect()
             return 'Conectado'
         except Exception as erro: 
