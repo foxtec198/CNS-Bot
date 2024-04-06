@@ -18,11 +18,14 @@ class CNS:
             return True
         except: return False
 
+    def data(self):
+        self.now = st('%x - %X')
+        self.day = st('%d')
+        self.month =st('%m')
+        self.year = st('%Y')
+
     def consultar(self, msg, tipo=None):
-        now = st('%x - %X')
-        day = st('%d')
-        month =st('%m')
-        year = st('%Y')
+        self.data()
 
         if self.connect():
             valor = msg.text.split()
@@ -63,9 +66,9 @@ class CNS:
                 AND T.Expirada = 0
                 AND T.Nome LIKE '%{Att}%'
                 AND T.Status = 85
-                AND DAY(TerminoReal) = {day}
-                AND MONTH(TerminoReal) = {month}
-                AND YEAR(TerminoReal) = {year}
+                AND DAY(TerminoReal) = {self.day}
+                AND MONTH(TerminoReal) = {self.month}
+                AND YEAR(TerminoReal) = {self.year}
                 GROUP BY T.Nome, R.Nome
                 ORDER BY [Total] DESC"""
                     case 2: consCr = f"""SELECT 
@@ -79,8 +82,8 @@ class CNS:
                 AND T.Expirada = 0
                 AND T.Nome LIKE '%{Att}%'
                 AND T.Status = 85
-                AND MONTH(TerminoReal) = {month}
-                AND YEAR(TerminoReal) = {year}
+                AND MONTH(TerminoReal) = {self.month}
+                AND YEAR(TerminoReal) = {self.year}
                 GROUP BY T.Nome, R.Nome
                 ORDER BY [Total] DESC"""
                     case 3: consCr = f"""SELECT
@@ -94,9 +97,9 @@ class CNS:
                 WHERE cr.Gerente = '{Gerente}'
                 AND T.Expirada = 0
                 AND T.Status = 85
-                AND DAY(TerminoReal) = {day}
-                AND MONTH(TerminoReal) = {month}
-                AND YEAR(TerminoReal) = {year}
+                AND DAY(TerminoReal) = {self.day}
+                AND MONTH(TerminoReal) = {self.month}
+                AND YEAR(TerminoReal) = {self.year}
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
@@ -111,8 +114,8 @@ class CNS:
                 WHERE cr.Gerente = '{Gerente}'
                 AND T.Expirada = 0
                 AND T.Status = 85
-                AND MONTH(TerminoReal) = {month}
-                AND YEAR(TerminoReal) = {year}
+                AND MONTH(TerminoReal) = {self.month}
+                AND YEAR(TerminoReal) = {self.year}
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
@@ -127,9 +130,9 @@ class CNS:
                 WHERE cr.GerenteRegional = '{Gerente}'
                 AND T.Expirada = 0
                 AND T.Status = 85
-                AND DAY(TerminoReal) = {day}
-                AND MONTH(TerminoReal) = {month}
-                AND YEAR(TerminoReal) = {year}
+                AND DAY(TerminoReal) = {self.day}
+                AND MONTH(TerminoReal) = {self.month}
+                AND YEAR(TerminoReal) = {self.year}
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
@@ -144,8 +147,8 @@ class CNS:
                 WHERE cr.GerenteRegional = '{Gerente}'
                 AND T.Expirada = 0
                 AND T.Status = 85
-                AND MONTH(TerminoReal) = {month}
-                AND YEAR(TerminoReal) = {year}
+                AND MONTH(TerminoReal) = {self.month}
+                AND YEAR(TerminoReal) = {self.year}
                 GROUP BY T.EstruturaNivel2
                 ORDER BY [Total] DESC
                 """
@@ -177,6 +180,55 @@ class CNS:
             arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
             bot.reply_to(arq, f'Segue QRCodes - {self.qr.nomeCR}')
         except Exception as e: bot.reply_to(msg, str(e))
+
+    def cons_visita(self, msg):
+        self.data() # Atualiza as datas 
+        param = msg.split()
+        if self.connect():
+            match len(param):
+                case 1: 
+                    bot.reply_to(msg, 'Consultando visitas referente ao mes atual!')
+                    cons = f"""SELECT R.Nome, COUNT(R.Nome) as 'Total'
+                    FROM Tarefa T with(nolock)
+                    INNER JOIN Recurso R with(nolock)
+                        on R.CodigoHash = T.FinalizadoPorHash
+                    INNER JOIN dw_vista.dbo.DM_ESTRUTURA Es with(nolock)
+                        on Es.Id_Estrutura = T.EstruturaId
+                    INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
+                        on cr.Id_CR = Es.Id_CR
+                    WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
+                    AND T.Nome LIKE '%Visita%'
+                    AND R.Nome <> 'Sistema'
+                    AND MONTH(T.TerminoReal) = {self.month}
+                    AND YEAR(T.TerminoReal) = {self.year}
+                    GROUP BY R.Nome
+                    ORDER BY COUNT(R.Nome) DESC"""
+                case 2: 
+                    data = param.split('_')
+                    day = data[0]
+                    month = data[1]
+                    bot.reply_to(msg, f'Consultando visitas referente a data {data}!')
+                    cons = f"""SELECT R.Nome, COUNT(R.Nome) as 'Total'
+                    FROM Tarefa T with(nolock)
+                    INNER JOIN Recurso R with(nolock)
+                        on R.CodigoHash = T.FinalizadoPorHash
+                    INNER JOIN dw_vista.dbo.DM_ESTRUTURA Es with(nolock)
+                        on Es.Id_Estrutura = T.EstruturaId
+                    INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
+                        on cr.Id_CR = Es.Id_CR
+                    WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
+                    AND T.Nome LIKE '%Visita%'
+                    AND R.Nome <> 'Sistema'
+                    AND DAY(T.TerminoReal) = {day}
+                    AND MONTH(T.TerminoReal) = {month}
+                    AND YEAR(T.TerminoReal) = {self.year}
+                    GROUP BY R.Nome
+                    ORDER BY COUNT(R.Nome) DESC"""
+
+            dados = read_sql_query(cons, self.conn)
+            export(dados, 'temp.png', max_cols=5, max_rows=99)
+            img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png','rb'))
+            bot.reply_to(img, 'Segue visitas realizadas! 🥈✅')
 
 cns = CNS()
 
@@ -229,6 +281,10 @@ def help_us(msg):
 @bot.message_handler(commands=['qrcode', 'qr'])
 def qrcode(msg):
     cns.cns_qrcode(msg)
+
+@bot.message_handler(commands=['visita'])
+def cons_visita(msg):
+    cns.cons_visita(msg)
 
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)
