@@ -17,15 +17,18 @@ class QRCode:
             self.conn = b.conn
     @cache
     def get_empresas(self, empresas):
-        match empresas:
+        match empresas.capitalize():
             case 'Poliservice': return 'src/logos/poliservice.png'
             case 'Top Service': return 'src/logos/topservice.png'
+            case 'Topservice': return 'src/logos/topservice.png'
             case 'Grupo GPS': return 'src/logos/ggps.png'
+            case 'GrupoGPS': return 'src/logos/ggps.png'
             case 'In Haus': return 'src/logos/inhaus.png'
+            case 'Inhaus': return 'src/logos/inhaus.png'
     @cache
     def get_cr(self, numCR):
         try:
-            cr = read_sql_query(f"SELECT TOP 1 Descricao FROM ESTRUTURA WHERE HierarquiaDescricao LIKE '%{numCR}%'", self.conn)
+            cr = read_sql_query(f"SELECT TOP 1 Descricao FROM ESTRUTURA WHERE HierarquiaDescricao LIKE '%{numCR} %'", self.conn)
             for i in cr['Descricao']:
                 return i
         except: return 'CR não corresponde'
@@ -53,7 +56,7 @@ class QRCode:
             Es.Id,
             (SELECT Descricao FROM Estrutura Es2 WHERE Es2.Id = Es.EstruturaSuperiorId) as 'Superior' 
             FROM Estrutura ES
-            WHERE HierarquiaDescricao LIKE '%{cr}%'
+            WHERE HierarquiaDescricao LIKE '%{cr} %'
             AND Es.Tipo LIKE '%{tipo}%'
             AND Nivel {nivel} {op_nivel}""", self.conn)
             
@@ -114,14 +117,14 @@ class QRCode:
 
             # TEXTO - Nome CR
             textImg = ImageDraw.Draw(coresImg)
-            fnt = ImageFont.truetype('src/fonts/arial_narrow_7.ttf', 30)
-            txt = f'{crNome[:40]}\n{crNome[40:]}'
+            fnt = ImageFont.truetype('src/fonts/arial_narrow_7.ttf', 18)
+            txt = f'{crNome}'.upper()
             textImg.text((450, 150), txt, font=fnt, fill='black', align='center')
 
             # TEXTO - Nome Local
             textImg = ImageDraw.Draw(coresImg)
-            fnt = ImageFont.truetype('arial', 20)
-            txt = f'{superior} > {local[:20]}\n{local[20:]}'
+            fnt = ImageFont.truetype('src/fonts/arial_narrow_7.ttf', 14)
+            txt = f'{superior} > {local}'.upper()
             textImg.text((450, 210), txt, font=fnt, fill='black', align='center')
 
             # Cola as propriedas na imagem final

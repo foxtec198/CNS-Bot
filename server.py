@@ -167,7 +167,11 @@ class CNS:
         msg2 = msg.text.split()
         param = msg2[1].split(':')
         cr = param[0]
-        if len(param) >= 2: Nivel = param[1]
+        if len(param) >= 2:
+            Nivel = param[1]
+            match Nivel:
+                case '': Nivel = 3
+                case ' ': Nivel = 3
         else: Nivel = 3
         if len(param) == 3: Empresa = param[2]
         else: Empresa = 'Grupo GPS'
