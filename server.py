@@ -7,27 +7,27 @@ from os import system
 from qrcode import QRCode
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine
+from PIL import Image
 
 API  = '7134052176:AAHfgBxarhx3wj5N8sTtFNRawuWt3PaXv0k'
 bot = telebot.TeleBot(API)
 
 # Conectar
 class CNS:
-    def connect(self, 
-            uid = 'guilherme.breve', 
-            pwd='84584608-Gui', 
-            server='10.56.6.56', 
-            database='Vista_Replication_PRD', 
-            driver='ODBC Driver 17 for SQL Server'):
-
-        uid = quote_plus(uid)
-        pwd = quote_plus(pwd)
-        server = quote_plus(server)
-        database = quote_plus(database)
+    def connect(self, uid, pwd, server, database='Vista_Replication_PRD', driver='ODBC Driver 18 for SQL Server'):
+        self.uid = quote_plus(uid)
+        self.pwd = quote_plus(pwd)
+        self.server = quote_plus(server)
+        self.database = quote_plus(database)
         driver = quote_plus(driver)
-        url = f'mssql://{uid}:{pwd}@{server}/{database}?driver={driver}'
-        engine = create_engine(url)
-        return engine
+        url = f'mssql://{self.uid}:{self.pwd}@{self.server}/{self.database}?driver={driver}&&TrustServerCertificate=yes'
+        try:
+            engine = create_engine(url)
+            self.connSQl = engine
+            print('Conectado!')
+            return engine
+        except Exception as error:
+            return error
 
     def data(self):
         self.now = st('%x - %X')
@@ -35,12 +35,27 @@ class CNS:
         self.month =st('%m')
         self.year = st('%Y')
 
+    def gerarPng(self, consulta, arquivo='temp.png'):
+        df = read_sql_query(consulta, self.connSQl)
+        export(df, filename=arquivo, max_cols=-1, max_rows=-1)
+        dt = Image.open(arquivo)
+        logo = Image.open('GPS.png')
+        hm = dt.size[1] + logo.size[1] 
+        wm = dt.size[0]
+        modelo = Image.new('RGBA', (wm, hm), color='#DFDFDF')
+        mid = int(modelo.width/2) - int(logo.width/2)
+        modelo.paste(logo, (mid, 0), logo)
+        modelo.paste(dt, (0, logo.height + 1))
+        modelo.save(arquivo)
+        return arquivo
+
     def consultar(self, msg, tipo=None):
+        now = st('%d-%m-%Y %H:%M')
         self.data()
         valor = msg.text.split()
         try:
             match len(valor):
-                case 1: 
+                case 1:
                     if tipo < 3: bot.reply_to(msg, 'Digite o CR antes de Consultar!')
                     if tipo >= 3 and tipo <= 4: bot.reply_to(msg, 'Digite a GERENCIA antes de Consultar!')
                 case 2:
@@ -49,7 +64,6 @@ class CNS:
                 case 3: 
                     if tipo < 3: Att = valor[2]
                     if tipo >= 3: Att = valor[1]
-
             match valor[0]:
                 case '/gerente': Gerente = Att.replace('_', ' ')
                 case '/gerentem': Gerente = Att.replace('_', ' ')
@@ -61,7 +75,6 @@ class CNS:
                 case '/regm': Gerente = Att.replace('_', ' ')
                 
             CR = valor[1]
-
             match tipo:
                 case 1: consCr = f"""SELECT 
             T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
@@ -160,14 +173,11 @@ class CNS:
             GROUP BY T.EstruturaNivel2
             ORDER BY [Total] DESC
             """
-                    
-            df = read_sql_query(consCr, conn)
-            export(df, 'temp.png', max_rows=-1, max_cols=-1)
             
+            self.gerarPng(consCr)
             img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
             if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} no periodo {now}')
             elif tipo >= 3: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
-
         except Exception as error: 
             bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
 
@@ -231,16 +241,17 @@ class CNS:
                 AND YEAR(T.TerminoReal) = {self.year}
                 GROUP BY R.Nome
                 ORDER BY COUNT(R.Nome) DESC"""
-
-        dados = read_sql_query(cons, engine.connect())
-        export(dados, 'temp.png', max_cols=5, max_rows=99)
+        self.gerarPng(cons)
         img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png','rb'))
         bot.reply_to(img, 'Segue visitas realizadas! 🥈✅')
 
 cns = CNS()
-engine = cns.connect()
+uid = 'guilherme.breve'
+pw = '84584608-Gui'
+server = '10.56.6.56'
+engine = cns.connect(uid, pw, server)
 conn = engine.connect()
-qr = QRCode('guilherme.breve','84584608-Gui','10.56.6.56')
+qr = QRCode(uid,pw,server)
 
 # Inicio
 @bot.message_handler(commands=['start','começar','init'])             
