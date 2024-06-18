@@ -181,7 +181,7 @@ class CNS:
         except Exception as error: 
             bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
 
-    def cns_qrcode(self, msg):
+    def cns_qrcode(self, msg, conn):
         msg2 = msg.text.split()
         param = msg2[1].split(':')
         cr = param[0]
@@ -195,7 +195,7 @@ class CNS:
         else: Empresa = 'Grupo GPS'
         bot.reply_to(msg, f'Criando QRCode do contrato {cr}, no Nivel {Nivel}, com a logo da empresa {Empresa}, Um instante. ✅')
         try:
-            qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais')
+            qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais', conn)
             nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
             arquivo = open(nomeArquivo, 'rb')
             arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
@@ -251,7 +251,7 @@ pw = '84584608-Gui'
 server = '10.56.6.56'
 engine = cns.connect(uid, pw, server)
 conn = engine.connect()
-qr = QRCode(uid,pw,server)
+qr = QRCode()
 
 # Inicio
 @bot.message_handler(commands=['start','começar','init'])             
@@ -305,7 +305,7 @@ def qrcode(msg):
 
 @bot.message_handler(commands=['visita'])
 def cons_visita(msg):
-    cns.cons_visita(msg)
+    cns.cons_visita(msg, conn)
 
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)

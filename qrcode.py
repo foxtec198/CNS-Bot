@@ -10,11 +10,11 @@ from backEnd import BackEnd
 from os import mkdir
 
 class QRCode:
-    def __init__(self, user, pwd, server):
-        b = BackEnd()
-        c = b.connect_db(user, pwd, server)
-        if c == 'Conectado': 
-            self.conn = b.conn
+    # def __init__(self, user, pwd, server):
+    #     b = BackEnd()
+    #     c = b.connect_db(user, pwd, server)
+    #     if c == 'Conectado': 
+    #         self.conn = b.conn
     @cache
     def get_empresas(self, empresas):
         match empresas.capitalize():
@@ -26,9 +26,9 @@ class QRCode:
             case 'In Haus': return 'src/logos/inhaus.png'
             case 'Inhaus': return 'src/logos/inhaus.png'
     @cache
-    def get_cr(self, numCR):
+    def get_cr(self, numCR, conn):
         try:
-            cr = read_sql_query(f"SELECT TOP 1 Descricao FROM ESTRUTURA WHERE HierarquiaDescricao LIKE '%{numCR} %'", self.conn)
+            cr = read_sql_query(f"SELECT TOP 1 Descricao FROM ESTRUTURA WHERE HierarquiaDescricao LIKE '%{numCR} %'", conn)
             for i in cr['Descricao']:
                 return i
         except: return 'CR não corresponde'
@@ -42,7 +42,7 @@ class QRCode:
         elif 'SEG -' in cr: return 'src/cores/modeloAzulEscuro.png'
         else: return 'src/cores/modeloAzulEscuro.png'
     @cache
-    def  cons(self, cr, op_cr, nivel, op_nivel, tipos):
+    def  cons(self, cr, op_cr, nivel, op_nivel, tipos, conn):
         match tipos:
             case 'Ativos': tipo = 'A'
             case 'Locais': tipo = 'L'
@@ -58,7 +58,7 @@ class QRCode:
             FROM Estrutura ES
             WHERE HierarquiaDescricao LIKE '%{cr} %'
             AND Es.Tipo LIKE '%{tipo}%'
-            AND Nivel {nivel} {op_nivel}""", self.conn)
+            AND Nivel {nivel} {op_nivel}""", conn)
             
             case '=': return read_sql_query(f"""SELECT
             Es.QRCode,
@@ -70,7 +70,7 @@ class QRCode:
             ON E.ID_Estrutura = Es.Id
             WHERE E.CRno = {cr}
             AND Es.Tipo = '%{tipo}%'
-            AND Es.Nivel {nivel} {op_nivel}""", self.conn)
+            AND Es.Nivel {nivel} {op_nivel}""", conn)
 
     def get_link_estrutura(self, id):
         return f'https://inteligenciaoperacional.app.br/report/gpsvista.php?qrcode={id}'
@@ -80,15 +80,15 @@ class QRCode:
         imgR.thumbnail(valor)
         imgR.save(img)
 
-    def gerar(self, cr, op_cr, nivel, op_nivel, empresa, tipos):
+    def gerar(self, cr, op_cr, nivel, op_nivel, empresa, tipos, conn):
         if cr != '':
             try:
                 mkdir('src/temp')
                 mkdir('./QRCodes')
             except: ...
-            nomeCR = self.get_cr(cr)
+            nomeCR = self.get_cr(cr, conn)
             self.nomeCR = nomeCR
-            estrutura = self.cons(cr, op_cr, nivel, op_nivel, tipos)
+            estrutura = self.cons(cr, op_cr, nivel, op_nivel, tipos, conn)
             es = estrutura.to_dict()
             for i in es['Descricao']:
                 local = es['Descricao'][i]
