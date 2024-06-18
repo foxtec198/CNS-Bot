@@ -247,7 +247,7 @@ class CNS:
 
 cns = CNS()
 uid = 'guilherme.breve'
-pw = '84584608-Gui'
+pw = '8458@Guilherme198'
 server = '10.56.6.56'
 engine = cns.connect(uid, pw, server)
 conn = engine.connect()
