@@ -8,9 +8,7 @@ from qrcode import QRCode
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine
 from PIL import Image
-
-API  = '7134052176:AAHfgBxarhx3wj5N8sTtFNRawuWt3PaXv0k'
-bot = telebot.TeleBot(API)
+import yaml
 
 # Conectar
 class CNS:
@@ -23,11 +21,8 @@ class CNS:
         url = f'mssql://{self.uid}:{self.pwd}@{self.server}/{self.database}?driver={driver}&&TrustServerCertificate=yes'
         try:
             engine = create_engine(url)
-            self.connSQl = engine
-            print('Conectado!')
             return engine
-        except Exception as error:
-            return error
+        except Exception as error: return error
 
     def data(self):
         self.now = st('%x - %X')
@@ -35,8 +30,8 @@ class CNS:
         self.month =st('%m')
         self.year = st('%Y')
 
-    def gerarPng(self, consulta, arquivo='temp.png'):
-        df = read_sql_query(consulta, self.connSQl)
+    def gerarPng(self, conn, consulta, arquivo='temp.png'):
+        df = read_sql_query(consulta, conn)
         export(df, filename=arquivo, max_cols=-1, max_rows=-1)
         dt = Image.open(arquivo)
         logo = Image.open('GPS.png')
@@ -174,14 +169,22 @@ class CNS:
             ORDER BY [Total] DESC
             """
             
-            self.gerarPng(consCr)
-            img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png', 'rb'))
+            engine = cns.connect(uid, pw, server)
+            conn = engine.connect()
+
+            
+            img = bot.send_photo(
+                chat_id = msg.chat.id, 
+                photo = open(
+                    self.gerarPng(conn, consCr), 'rb'
+                    )
+                )
+
             if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} no periodo {now}')
             elif tipo >= 3: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
-        except Exception as error: 
-            bot.reply_to(msg, f'Erro com a consulta ❌: \n {error}')
+        except Exception as error: bot.reply_to(msg, f'Erro encontrado ❌: \n {error}')
 
-    def cns_qrcode(self, msg, conn):
+    def cns_qrcode(self, msg):
         msg2 = msg.text.split()
         param = msg2[1].split(':')
         cr = param[0]
@@ -195,6 +198,8 @@ class CNS:
         else: Empresa = 'Grupo GPS'
         bot.reply_to(msg, f'Criando QRCode do contrato {cr}, no Nivel {Nivel}, com a logo da empresa {Empresa}, Um instante. ✅')
         try:
+            engine = cns.connect(uid, pw, server)
+            conn = engine.connect()
             qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais', conn)
             nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
             arquivo = open(nomeArquivo, 'rb')
@@ -202,7 +207,7 @@ class CNS:
             bot.reply_to(arq, f'Segue QRCodes - {self.qr.nomeCR}')
         except Exception as e: bot.reply_to(msg, str(e))
 
-    def cons_visita(self, msg):
+    def cons_visita(self, msg): 
         self.data() # Atualiza as datas 
         param = msg.text.split()
         match len(param):
@@ -217,7 +222,13 @@ class CNS:
                 INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
                     on cr.Id_CR = Es.Id_CR
                 WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
-                AND T.Nome LIKE '%Visita %'
+                AND T.ChecklistId in (
+                    '7c7d1611-01f5-4f6a-9652-4e24bb1ce07a',
+                    '21368b38-a8f5-4793-8317-aca40a9489a5',
+                    '71bb4fa9-6f30-45df-9461-4b01534fbc12',
+                    'd44ee96b-262e-4d6e-b4a6-861cf0663c3e',
+                    '460e6d74-a6fe-4128-bc84-3d0455d30f45'
+                )
                 AND R.Nome <> 'Sistema'
                 AND MONTH(T.TerminoReal) = {self.month}
                 AND YEAR(T.TerminoReal) = {self.year}
@@ -235,22 +246,38 @@ class CNS:
                 INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
                     on cr.Id_CR = Es.Id_CR
                 WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
-                AND T.Nome LIKE '%Visita %'
+                AND T.ChecklistId in (
+                    '7c7d1611-01f5-4f6a-9652-4e24bb1ce07a',
+                    '21368b38-a8f5-4793-8317-aca40a9489a5',
+                    '71bb4fa9-6f30-45df-9461-4b01534fbc12',
+                    'd44ee96b-262e-4d6e-b4a6-861cf0663c3e',
+                    '460e6d74-a6fe-4128-bc84-3d0455d30f45'
+                )
                 AND R.Nome <> 'Sistema'
                 AND MONTH(T.TerminoReal) = {month}
                 AND YEAR(T.TerminoReal) = {self.year}
                 GROUP BY R.Nome
                 ORDER BY COUNT(R.Nome) DESC"""
-        self.gerarPng(cons)
-        img = bot.send_photo(chat_id=msg.chat.id, photo=open('temp.png','rb'))
+        
+        engine = cns.connect(uid, pw, server)
+        conn = engine.connect()
+
+        img = bot.send_photo(
+            chat_id=msg.chat.id, 
+            photo=open(
+                self.gerarPng(conn, cons),'rb'
+                )
+            )
         bot.reply_to(img, 'Segue visitas realizadas! 🥈✅')
 
+with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
+creds = []
+for i in cred:
+    creds.append(cred[i])
+uid, pw, server, API = creds
+
 cns = CNS()
-uid = 'guilherme.breve'
-pw = '8458@Guilherme198'
-server = '10.56.6.56'
-engine = cns.connect(uid, pw, server)
-conn = engine.connect()
+bot = telebot.TeleBot(API)
 qr = QRCode()
 
 # Inicio
@@ -305,7 +332,7 @@ def qrcode(msg):
 
 @bot.message_handler(commands=['visita'])
 def cons_visita(msg):
-    cns.cons_visita(msg, conn)
+    cns.cons_visita(msg)
 
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)
