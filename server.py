@@ -200,11 +200,14 @@ class CNS:
         try:
             engine = cns.connect(uid, pw, server)
             conn = engine.connect()
-            qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais', conn)
-            nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
-            arquivo = open(nomeArquivo, 'rb')
-            arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
-            bot.reply_to(arq, f'Segue QRCodes - {self.qr.nomeCR}')
+            # nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
+            nomeArquivo = qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais', conn)
+            print(nomeArquivo)
+            if 'QRCodes/' in nomeArquivo:
+                arquivo = open(nomeArquivo, 'rb')
+                arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
+                bot.reply_to(arq, f'Segue QRCodes - {self.qr.nomeCR}')
+            else: bot.reply_to(msg, f'Erro encontrado: {nomeArquivo}')
         except Exception as e: bot.reply_to(msg, str(e))
 
     def cons_visita(self, msg): 
@@ -270,10 +273,9 @@ class CNS:
             )
         bot.reply_to(img, 'Segue visitas realizadas! 🥈✅')
 
-with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
 creds = []
-for i in cred:
-    creds.append(cred[i])
+with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
+for i in cred: creds.append(cred[i])
 uid, pw, server, API = creds
 
 cns = CNS()
@@ -344,4 +346,3 @@ except: system('clear')
 
 print('CNS-Bot em execução!...')
 bot.infinity_polling()
-

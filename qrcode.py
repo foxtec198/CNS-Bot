@@ -6,15 +6,9 @@ from segno import make
 from reportlab.pdfgen import canvas
 from os import listdir
 from PyPDF2 import PdfMerger, PdfReader
-from backEnd import BackEnd
 from os import mkdir
 
 class QRCode:
-    # def __init__(self, user, pwd, server):
-    #     b = BackEnd()
-    #     c = b.connect_db(user, pwd, server)
-    #     if c == 'Conectado': 
-    #         self.conn = b.conn
     @cache
     def get_empresas(self, empresas):
         match empresas.capitalize():
@@ -81,23 +75,24 @@ class QRCode:
         imgR.save(img)
 
     def gerar(self, cr, op_cr, nivel, op_nivel, empresa, tipos, conn):
-        if cr != '':
-            try:
-                mkdir('src/temp')
-                mkdir('./QRCodes')
-            except: ...
-            nomeCR = self.get_cr(cr, conn)
-            self.nomeCR = nomeCR
-            estrutura = self.cons(cr, op_cr, nivel, op_nivel, tipos, conn)
-            es = estrutura.to_dict()
-            for i in es['Descricao']:
-                local = es['Descricao'][i]
-                superior = es['Superior'][i]
-                link = self.get_link_estrutura(es['Id'][i])
-                qr = es['QRCode'][i]
-                self.makePng(nomeCR, local, qr, link, i, empresa, superior)
-                self.merge(nomeCR)
-            rmtree('src/temp')
+        try:
+            mkdir('src/temp')
+            mkdir('./QRCodes')
+        except: ...
+        # try:
+        self.nomeCR = self.get_cr(cr, conn)
+        estrutura = self.cons(cr, op_cr, nivel, op_nivel, tipos, conn)
+        es = estrutura.to_dict()
+        for i in es['Descricao']:
+            local = es['Descricao'][i]
+            superior = es['Superior'][i]
+            link = self.get_link_estrutura(es['Id'][i])
+            qr = es['QRCode'][i]
+            self.makePng(self.nomeCR, local, qr, link, i, empresa, superior)
+            self.merge(self.nomeCR)
+        rmtree('src/temp')
+        return f'QRCodes/{self.nomeCR}.pdf'
+        # except Exception as e: return e
     
     def makePng(self, crNome, local, qr, link, cont, empresas, superior):
             # Gera os QR Codes
@@ -151,7 +146,3 @@ class QRCode:
                     PDF.append(leitura)
         PDF.write(f'QRCodes/{cr}.pdf')
         PDF.close()
-
-if __name__ == '__main__':
-    qr = QRCode('guilherme.breve','84584608@Gui','10.56.6.56')
-    qr.gerar(cr=42636, op_cr='=', op_nivel=3, nivel='>=', empresa='Grupo GPS')
