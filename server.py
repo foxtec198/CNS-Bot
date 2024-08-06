@@ -9,6 +9,7 @@ from urllib.parse import quote_plus
 from sqlalchemy import create_engine
 from PIL import Image
 import yaml
+from os import environ
 
 # Conectar
 class CNS:
@@ -276,7 +277,8 @@ class CNS:
 creds = []
 with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
 for i in cred: creds.append(cred[i])
-uid, pw, server, API = creds
+uid, server, API = creds
+pw = environ['pwdbd']
 
 cns = CNS()
 bot = telebot.TeleBot(API)
