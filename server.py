@@ -278,7 +278,7 @@ creds = []
 with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
 for i in cred: creds.append(cred[i])
 uid, server, API = creds
-pw = environ['pwdbd']
+pw = input('Digite sua senha: ')
 
 cns = CNS()
 bot = telebot.TeleBot(API)
