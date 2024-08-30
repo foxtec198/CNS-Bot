@@ -1,4 +1,4 @@
-from pandas import read_sql_query
+from pandas import read_sql
 from functools import cache
 from PIL import Image, ImageDraw, ImageFont
 from shutil import rmtree
@@ -7,64 +7,89 @@ from reportlab.pdfgen import canvas
 from os import listdir
 from PyPDF2 import PdfMerger, PdfReader
 from os import mkdir
+from sqlalchemy import create_engine
+from urllib.parse import quote_plus 
+import pyodbc
 
 class QRCode:
+    def new_connect_db(self, uid, pwd, server, database='Vista_Replication_PRD', driver='ODBC Driver 18 for SQL Server'):
+        self.uid = quote_plus(uid)
+        self.pwd = quote_plus(pwd)
+        self.server = quote_plus(server)
+        self.database = quote_plus(database)
+        driver = quote_plus(driver)
+        url = f'mssql://{self.uid}:{self.pwd}@{self.server}/{self.database}?driver={driver}&&TrustServerCertificate=yes'
+        engine = create_engine(url)
+        try:
+            self.conn = engine.connect()
+            return 'Conectado'
+        except Exception as e:
+            return f'Confira os dados acima! - {e}'
+
     @cache
     def get_empresas(self, empresas):
-        match empresas.capitalize():
+        match empresas:
             case 'Poliservice': return 'src/logos/poliservice.png'
-            case 'Top Service': return 'src/logos/topservice.png'
             case 'Topservice': return 'src/logos/topservice.png'
             case 'Grupo GPS': return 'src/logos/ggps.png'
-            case 'GrupoGPS': return 'src/logos/ggps.png'
             case 'In Haus': return 'src/logos/inhaus.png'
-            case 'Inhaus': return 'src/logos/inhaus.png'
     @cache
-    def get_cr(self, numCR, conn):
+    
+    def get_cr(self, numCR):
         try:
-            cr = read_sql_query(f"SELECT TOP 1 Descricao FROM ESTRUTURA WHERE HierarquiaDescricao LIKE '%{numCR} %'", conn)
+            cr = read_sql(f"SELECT TOP 1 Descricao FROM ESTRUTURA WHERE HierarquiaDescricao LIKE '%{numCR} -%'", self.conn)
             for i in cr['Descricao']:
                 return i
-        except: return 'CR não corresponde'
+        except: return numCR
+    
     @cache
     def definir_cor(self, cr):
         # Azul claro limpeza, laranja logistica, vermelho manutenção, azul escuro segurança e verde jardinagem
-        if 'POR -' in cr: return 'src/cores/modeloCinza.png'
-        elif 'MAV -' in cr: return 'src/cores/modeloVerde.png'
-        elif 'MAP -' in cr: return 'src/cores/modeloVermelho.png'
-        elif 'LPG -' in cr: return 'src/cores/modeloAzul.png'
-        elif 'SEG -' in cr: return 'src/cores/modeloAzulEscuro.png'
-        else: return 'src/cores/modeloAzulEscuro.png'
+        if ' - POR - ' in cr: return 'src/cores/modeloAzulEscuro.png'
+        elif ' - MAV - ' in cr: return 'src/cores/modeloVerde.png'
+        elif ' - MAP -' in cr: return 'src/cores/modeloVermelho.png'
+        elif ' - LPG -' in cr: return 'src/cores/modeloAzul.png'
+        elif ' - SEG -' in cr: return 'src/cores/modeloAzulEscuro.png'
+        else: return 'src/cores/modeloCinza.png'
+
     @cache
-    def  cons(self, cr, op_cr, nivel, op_nivel, tipos, conn):
+    def  cons(self, cr, nivel, op_nivel, tipos):
         match tipos:
             case 'Ativos': tipo = 'A'
             case 'Locais': tipo = 'L'
             case 'Ambos': tipo = ''
 
-        match op_cr:
-            case 'LIKE': return read_sql_query(f"""
-            SELECT 
-            Es.QRCode,
-            Es.Descricao,
-            Es.Id,
-            (SELECT Descricao FROM Estrutura Es2 WHERE Es2.Id = Es.EstruturaSuperiorId) as 'Superior' 
-            FROM Estrutura ES
-            WHERE HierarquiaDescricao LIKE '%{cr} %'
-            AND Es.Tipo LIKE '%{tipo}%'
-            AND Nivel {nivel} {op_nivel}""", conn)
-            
-            case '=': return read_sql_query(f"""SELECT
+        match nivel:
+            case '1 - PEC': nivel = 1
+            case '2 - Grupo de Cliente': nivel = 2
+            case '3 - CR': nivel = 3
+
+        if tipos != 'Ambos': cs = f"""SELECT
             Es.QRCode,
             Es.Descricao,
             Es.Id,
             (SELECT Descricao FROM Estrutura Es2 WHERE Es2.Id = Es.EstruturaSuperiorId) as 'Superior'
             FROM Estrutura ES
-            INNER JOIN dw_vista.dbo.DM_ESTRUTURA E
-            ON E.ID_Estrutura = Es.Id
-            WHERE E.CRno = {cr}
-            AND Es.Tipo = '%{tipo}%'
-            AND Es.Nivel {nivel} {op_nivel}""", conn)
+            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA DE 
+                ON DE.ID_Estrutura = ES.Id
+            WHERE DE.CRNO = {cr}
+            AND Es.Tipo IN ('A','L')
+            AND Es.Nivel {op_nivel} {nivel}"""
+            
+        else: cs = f"""SELECT
+            Es.QRCode,
+            Es.Descricao,
+            Es.Id,
+            (SELECT Descricao FROM Estrutura Es2 WHERE Es2.Id = Es.EstruturaSuperiorId) as 'Superior'
+            FROM Estrutura ES
+            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA DE
+                ON DE.ID_Estrutura = Es.Id
+            WHERE DE.CRNO = {cr}
+            AND Es.Tipo = '{tipo}' 
+            AND Es.Nivel {op_nivel} {nivel}"""
+
+        dddd = read_sql(cs, self.conn)
+        return dddd
 
     def get_link_estrutura(self, id):
         return f'https://inteligenciaoperacional.app.br/report/gpsvista.php?qrcode={id}'
@@ -74,28 +99,51 @@ class QRCode:
         imgR.thumbnail(valor)
         imgR.save(img)
 
-    def gerar(self, cr, op_cr, nivel, op_nivel, empresa, tipos, conn):
-        try:
-            mkdir('src/temp')
-            mkdir('./QRCodes')
+    def gerar(self, cr, op_nivel, nivel, empresa, tipos, conn):
+        try:mkdir('src/temp')
         except: ...
-        # try:
-        self.nomeCR = self.get_cr(cr, conn)
-        estrutura = self.cons(cr, op_cr, nivel, op_nivel, tipos, conn)
+        try:mkdir('./QRCodes')
+        except: ...
+
+        self.conn = conn
+        nomeCR = self.get_cr(cr)
+        self.nomeCR = nomeCR
+        estrutura = self.cons(cr, nivel, op_nivel, tipos)
         es = estrutura.to_dict()
         for i in es['Descricao']:
-            local = es['Descricao'][i]
-            superior = es['Superior'][i]
-            link = self.get_link_estrutura(es['Id'][i])
-            qr = es['QRCode'][i]
-            self.makePng(self.nomeCR, local, qr, link, i, empresa, superior)
-            self.merge(self.nomeCR)
-        rmtree('src/temp')
-        return f'QRCodes/{self.nomeCR}.pdf'
-        # except Exception as e: return e
+            if es['Descricao']:
+                local = es['Descricao'][i]
+                superior = es['Superior'][i]
+                link = self.get_link_estrutura(es['Id'][i])
+                qr = es['QRCode'][i]
+                self.makePng(nomeCR, local, qr, link, i, empresa, superior)
+                self.merge(nomeCR)
+        try: rmtree('src/temp')
+        except Exception as e: return e
+        return f'QRCodes/{nomeCR}.pdf'
     
+    def all_crs(self, cr, op_cr, nivel, op_nivel, empresa, tipos):
+        if cr == 0:
+            print('Imprimindo CRs')
+            estrutura = self.cons(cr, op_cr, nivel, op_nivel, tipos)
+            es = estrutura.to_dict()
+            for i in es['Descricao']:
+                if es['Descricao']:
+                    local = es['Descricao'][i]
+                    print(f'Gerando {local}')
+                    superior = es['Superior'][i]
+                    link = self.get_link_estrutura(es['Id'][i])
+                    qr = es['QRCode'][i]
+                    nomeCR = local
+                    self.makePng(nomeCR, local, qr, link, i, empresa, superior)
+                    self.merge('All Crs')
+            
     def makePng(self, crNome, local, qr, link, cont, empresas, superior):
             # Gera os QR Codes
+            crNome = crNome.upper()
+            superior = superior.upper()
+            local = local.upper()
+
             qrlocal = make(qr)
             qrlast = make(link)
 
@@ -112,14 +160,15 @@ class QRCode:
 
             # TEXTO - Nome CR
             textImg = ImageDraw.Draw(coresImg)
-            fnt = ImageFont.truetype('src/fonts/arial_narrow_7.ttf', 18)
-            txt = f'{crNome}'.upper()
+            fnt = ImageFont.truetype('src/fonts/arial_narrow_7.ttf', 30)
+            txt = f'{crNome[:40]}'
             textImg.text((450, 150), txt, font=fnt, fill='black', align='center')
 
             # TEXTO - Nome Local
             textImg = ImageDraw.Draw(coresImg)
-            fnt = ImageFont.truetype('src/fonts/arial_narrow_7.ttf', 14)
-            txt = f'{superior} > {local}'.upper()
+            fnt = ImageFont.truetype('arial', 20)
+            if '- PR -' in superior: txt = f'{local}'
+            else: txt = f'{superior} > {local[:40]}\n{local[40:]}'
             textImg.text((450, 210), txt, font=fnt, fill='black', align='center')
 
             # Cola as propriedas na imagem final
@@ -146,3 +195,17 @@ class QRCode:
                     PDF.append(leitura)
         PDF.write(f'QRCodes/{cr}.pdf')
         PDF.close()
+
+    def cons_crs(self):
+        df = read_sql('''SELECT DISTINCT Nivel_03 as cr
+        FROM DW_Vista.dbo.DM_ESTRUTURA DE WITH(NOLOCK)
+        INNER JOIN DW_Vista.dbo.DM_CR DC WITH(NOLOCK) ON DC.ID_CR = DE.ID_CR
+        WHERE DC.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
+        AND Nivel_03 <> 'Null' ''', self.conn)
+        return df['cr']
+        
+if __name__ == '__main__':
+    qr = QRCode()
+    conn = qr.new_connect_db('guilherme.breve','84584608@Gui198','10.56.6.56')
+    print(conn)
+    print(qr.gerar('60434 - PR - LPG - COND SPAZIO LEOPOLDINA', 4, '>=', 'Grupo GPS', 'Locais'))

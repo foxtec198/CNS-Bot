@@ -1,15 +1,14 @@
 import telebot
 import msgP
+import yaml
 from pandas import read_sql_query
 from dataframe_image import export
-from time import strftime as st
 from os import system
 from qrcode import QRCode
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine
 from PIL import Image
-import yaml
-from os import environ
+from datetime import datetime as dt
 
 # Conectar
 class CNS:
@@ -25,15 +24,9 @@ class CNS:
             return engine
         except Exception as error: return error
 
-    def data(self):
-        self.now = st('%x - %X')
-        self.day = st('%d')
-        self.month =st('%m')
-        self.year = st('%Y')
-
     def gerarPng(self, conn, consulta, arquivo='temp.png'):
         df = read_sql_query(consulta, conn)
-        export(df, filename=arquivo, max_cols=-1, max_rows=-1)
+        export(df, filename=arquivo, max_cols=-1, max_rows=-1, table_conversion='selenium')
         dt = Image.open(arquivo)
         logo = Image.open('GPS.png')
         hm = dt.size[1] + logo.size[1] 
@@ -45,149 +38,11 @@ class CNS:
         modelo.save(arquivo)
         return arquivo
 
-    def consultar(self, msg, tipo=None):
-        now = st('%d-%m-%Y %H:%M')
-        self.data()
-        valor = msg.text.split()
-        try:
-            match len(valor):
-                case 1:
-                    if tipo < 3: bot.reply_to(msg, 'Digite o CR antes de Consultar!')
-                    if tipo >= 3 and tipo <= 4: bot.reply_to(msg, 'Digite a GERENCIA antes de Consultar!')
-                case 2:
-                    if tipo < 3: Att = ''
-                    if tipo >= 3: Att = valor[1]
-                case 3: 
-                    if tipo < 3: Att = valor[2]
-                    if tipo >= 3: Att = valor[1]
-            match valor[0]:
-                case '/gerente': Gerente = Att.replace('_', ' ')
-                case '/gerentem': Gerente = Att.replace('_', ' ')
-                case '/ger': Gerente = Att.replace('_', ' ')
-                case '/germ': Gerente = Att.replace('_', ' ')
-                case '/regional': Gerente = Att.replace('_', ' ')
-                case '/regionalm': Gerente = Att.replace('_', ' ')
-                case '/reg': Gerente = Att.replace('_', ' ')
-                case '/regm': Gerente = Att.replace('_', ' ')
-                
-            CR = valor[1]
-            match tipo:
-                case 1: consCr = f"""SELECT 
-            T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
-            FROM Tarefa T
-            INNER JOIN Recurso R
-                on R.CodigoHash = T.ModificadoPorHash
-            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
-                on ES.Id_Estrutura = T.EstruturaId
-            WHERE Es.CRNo = {CR}
-            AND T.Expirada = 0
-            AND T.Nome LIKE '%{Att}%'
-            AND T.Status = 85
-            AND DAY(TerminoReal) = {self.day}
-            AND MONTH(TerminoReal) = {self.month}
-            AND YEAR(TerminoReal) = {self.year}
-            GROUP BY T.Nome, R.Nome
-            ORDER BY [Total] DESC"""
-                case 2: consCr = f"""SELECT 
-            T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
-            FROM Tarefa T
-            INNER JOIN Recurso R
-                on R.CodigoHash = T.ModificadoPorHash
-            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
-                on ES.Id_Estrutura = T.EstruturaId
-            WHERE Es.CRNo = {CR}
-            AND T.Expirada = 0
-            AND T.Nome LIKE '%{Att}%'
-            AND T.Status = 85
-            AND MONTH(TerminoReal) = {self.month}
-            AND YEAR(TerminoReal) = {self.year}
-            GROUP BY T.Nome, R.Nome
-            ORDER BY [Total] DESC"""
-                case 3: consCr = f"""SELECT
-                T.EstruturaNivel2 as 'CR',
-                COUNT(T.Nome) as 'Total'
-            FROM Tarefa T
-            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA as Es
-                on Es.Id_Estrutura = T.EstruturaId
-            INNER JOIN DW_Vista.dbo.DM_CR cr
-                on cr.ID_CR = Es.Id_CR
-            WHERE cr.Gerente = '{Gerente}'
-            AND T.Expirada = 0
-            AND T.Status = 85
-            AND DAY(TerminoReal) = {self.day}
-            AND MONTH(TerminoReal) = {self.month}
-            AND YEAR(TerminoReal) = {self.year}
-            GROUP BY T.EstruturaNivel2
-            ORDER BY [Total] DESC
-            """
-                case 4: consCr = f"""SELECT
-                T.EstruturaNivel2 as 'CR',
-                COUNT(T.Nome) as 'Total'
-            FROM Tarefa T
-            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA as Es
-                on Es.Id_Estrutura = T.EstruturaId
-            INNER JOIN DW_Vista.dbo.DM_CR cr
-                on cr.ID_CR = Es.Id_CR
-            WHERE cr.Gerente = '{Gerente}'
-            AND T.Expirada = 0
-            AND T.Status = 85
-            AND MONTH(TerminoReal) = {self.month}
-            AND YEAR(TerminoReal) = {self.year}
-            GROUP BY T.EstruturaNivel2
-            ORDER BY [Total] DESC
-            """
-                case 5: consCr = f"""SELECT
-                T.EstruturaNivel2 as 'CR',
-                COUNT(T.Nome) as 'Total'
-            FROM Tarefa T
-            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA as Es
-                on Es.Id_Estrutura = T.EstruturaId
-            INNER JOIN DW_Vista.dbo.DM_CR cr
-                on cr.ID_CR = Es.Id_CR
-            WHERE cr.GerenteRegional = '{Gerente}'
-            AND T.Expirada = 0
-            AND T.Status = 85
-            AND DAY(TerminoReal) = {self.day}
-            AND MONTH(TerminoReal) = {self.month}
-            AND YEAR(TerminoReal) = {self.year}
-            GROUP BY T.EstruturaNivel2
-            ORDER BY [Total] DESC
-            """
-                case 6: consCr = f"""SELECT
-                T.EstruturaNivel2 as 'CR',
-                COUNT(T.Nome) as 'Total'
-            FROM Tarefa T
-            INNER JOIN DW_Vista.dbo.DM_ESTRUTURA as Es
-                on Es.Id_Estrutura = T.EstruturaId
-            INNER JOIN DW_Vista.dbo.DM_CR cr
-                on cr.ID_CR = Es.Id_CR
-            WHERE cr.GerenteRegional = '{Gerente}'
-            AND T.Expirada = 0
-            AND T.Status = 85
-            AND MONTH(TerminoReal) = {self.month}
-            AND YEAR(TerminoReal) = {self.year}
-            GROUP BY T.EstruturaNivel2
-            ORDER BY [Total] DESC
-            """
-            
-            engine = cns.connect(uid, pw, server)
-            conn = engine.connect()
-
-            
-            img = bot.send_photo(
-                chat_id = msg.chat.id, 
-                photo = open(
-                    self.gerarPng(conn, consCr), 'rb'
-                    )
-                )
-
-            if tipo < 3: bot.reply_to(img, f'Segue consulta referente ao contrato {CR} no periodo {now}')
-            elif tipo >= 3: bot.reply_to(img, f'Segue consulta referente a Gerencia {Gerente} no periodo {now}')
-        except Exception as error: bot.reply_to(msg, f'Erro encontrado ❌: \n {error}')
-
     def cns_qrcode(self, msg):
-        msg2 = msg.text.split()
-        param = msg2[1].split(':')
+        param = msg.text
+        param =  param.replace('/qr ','')
+        param =  param.replace('/qrcode ','')
+        param = param.split(':')
         cr = param[0]
         if len(param) >= 2:
             Nivel = param[1]
@@ -201,47 +56,172 @@ class CNS:
         try:
             engine = cns.connect(uid, pw, server)
             conn = engine.connect()
-            # nomeArquivo = f'QRCodes/{self.qr.nomeCR}.pdf'
-            nomeArquivo = qr.gerar(cr, 'LIKE','>=', Nivel, Empresa, 'Locais', conn)
-            print(nomeArquivo)
+            nomeArquivo = qr.gerar(cr, '>=', Nivel, Empresa, 'Locais', conn)
             if 'QRCodes/' in nomeArquivo:
                 arquivo = open(nomeArquivo, 'rb')
                 arq = bot.send_document(chat_id=msg.chat.id, document=arquivo)
-                bot.reply_to(arq, f'Segue QRCodes - {self.qr.nomeCR}')
+                bot.reply_to(arq, f'Segue QRCodes - {qr.nomeCR}')
             else: bot.reply_to(msg, f'Erro encontrado: {nomeArquivo}')
-        except Exception as e: bot.reply_to(msg, str(e))
+        except Exception as e: bot.reply_to(msg, f'Erro ao Gerar QR: {e}')
 
-    def cons_visita(self, msg): 
-        self.data() # Atualiza as datas 
-        param = msg.text.split()
-        match len(param):
-            case 1: 
-                bot.reply_to(msg, 'Consultando visitas referente ao mes atual!')
-                cons = f"""SELECT R.Nome, COUNT(R.Nome) as 'Total'
-                FROM Tarefa T with(nolock)
-                INNER JOIN Recurso R with(nolock)
-                    on R.CodigoHash = T.FinalizadoPorHash
-                INNER JOIN dw_vista.dbo.DM_ESTRUTURA Es with(nolock)
-                    on Es.Id_Estrutura = T.EstruturaId
-                INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
-                    on cr.Id_CR = Es.Id_CR
-                WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
-                AND T.ChecklistId in (
-                    '7c7d1611-01f5-4f6a-9652-4e24bb1ce07a',
-                    '21368b38-a8f5-4793-8317-aca40a9489a5',
-                    '71bb4fa9-6f30-45df-9461-4b01534fbc12',
-                    'd44ee96b-262e-4d6e-b4a6-861cf0663c3e',
-                    '460e6d74-a6fe-4128-bc84-3d0455d30f45'
-                )
-                AND R.Nome <> 'Sistema'
-                AND MONTH(T.TerminoReal) = {self.month}
-                AND YEAR(T.TerminoReal) = {self.year}
-                GROUP BY R.Nome
-                ORDER BY COUNT(R.Nome) DESC"""
-            case 2: 
-                month = param[1]
-                bot.reply_to(msg, f'Consultando visitas referente a data {month}!')
-                cons = f"""SELECT R.Nome, COUNT(R.Nome) as 'Total'
+creds = []
+with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
+for i in cred: creds.append(cred[i])
+uid, server, API, pw = creds
+
+cns = CNS()
+bot = telebot.TeleBot(API)
+qr = QRCode()
+eg = cns.connect(uid, pw, server) # Cria a engine de conexão
+
+# Inicio
+@bot.message_handler(commands=['start','init'])             
+def CNS_boasvindas(msg):
+    bot.reply_to(msg, msgP.boas_vindas.replace('$$USER', msg.from_user.first_name))
+
+# Consultar Total de Tarefas Dia
+@bot.message_handler(commands=['total','tt'])
+def CNS_consultar(msg):
+    bot.reply_to(msg, 'Só um instante')
+    try:
+        data = dt.now() # Data atual
+        # Separa por categorias
+        day = data.strftime('%d')
+        month = data.strftime('%m')
+        year = data.strftime('%Y')
+
+        # Separa CR de Tarefa(Caso haja)
+        valor = msg.text
+        valor = valor.replace('/total ','')
+        valor = valor.replace('/tt ','')
+        valor = valor.split(':')
+        
+        match len(valor):
+            case 1:
+                cons = F'''SELECT T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
+                        FROM Tarefa T
+                        INNER JOIN Recurso R
+                            on R.CodigoHash = T.ModificadoPorHash
+                        INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
+                            on ES.Id_Estrutura = T.EstruturaId
+                        WHERE Es.CRNo = {valor[0]}
+                        AND T.Expirada = 0
+                        AND T.Status = 85
+                        AND DAY(TerminoReal) = {day}
+                        AND MONTH(TerminoReal) = {month}
+                        AND YEAR(TerminoReal) = {year}
+                        GROUP BY T.Nome, R.Nome
+                        ORDER BY [Total] DESC'''
+            case 2:
+                cons = F'''SELECT T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
+                        FROM Tarefa T
+                        INNER JOIN Recurso R
+                            on R.CodigoHash = T.ModificadoPorHash
+                        INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
+                            on ES.Id_Estrutura = T.EstruturaId
+                        WHERE Es.CRNo = {valor[0]}
+                        AND T.Expirada = 0
+                        AND T.Status = 85
+                        AND DAY(TerminoReal) = {day}
+                        AND MONTH(TerminoReal) = {month}
+                        AND YEAR(TerminoReal) = {year}
+                        AND T.Nome LIKE '%{valor[1]}%'
+                        GROUP BY T.Nome, R.Nome
+                        ORDER BY [Total] DESC'''
+        
+        conn = eg.connect() # Conecta ao DB
+        cns.gerarPng(conn, cons) # Gera o PNG com as Logos
+
+        # Envia a imagem
+        ph = bot.send_photo(msg.chat.id, open('temp.png', 'rb'))
+        bot.reply_to(ph, f"""Segue consulta do contrato {valor[0]} \n\n Data: {data.strftime('%d/%m/%Y - %H:%M')}""")
+
+    except Exception as e: bot.send_message(chat_id=msg.chat.id, text=f'Erro: {e}')
+
+# Consultar Total de Tarefas Mês
+@bot.message_handler(commands=['totalm', 'tm'])
+def CNS_consultar(msg):
+    bot.reply_to(msg, 'Só um instante')
+    try:
+        data = dt.now() # Data atual
+        # Separa por categorias
+        month = data.strftime('%m')
+        year = data.strftime('%Y')
+
+        # Separa CR de Tarefa(Caso haja)
+        valor = msg.text
+        valor = valor.replace('/totalm ','')
+        valor = valor.replace('/tm ','')
+        valor = valor.split(':')
+        
+        match len(valor):
+            case 1:
+                cons = F'''SELECT T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
+                        FROM Tarefa T
+                        INNER JOIN Recurso R
+                            on R.CodigoHash = T.ModificadoPorHash
+                        INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
+                            on ES.Id_Estrutura = T.EstruturaId
+                        WHERE Es.CRNo = {valor[0]}
+                        AND T.Expirada = 0
+                        AND T.Status = 85
+                        AND MONTH(TerminoReal) = {month}
+                        AND YEAR(TerminoReal) = {year}
+                        GROUP BY T.Nome, R.Nome
+                        ORDER BY [Total] DESC'''
+            case 2:
+                cons = F'''SELECT T.Nome, R.Nome as 'Colaborador', COUNT(T.Nome) as 'Total'
+                        FROM Tarefa T
+                        INNER JOIN Recurso R
+                            on R.CodigoHash = T.ModificadoPorHash
+                        INNER JOIN DW_Vista.dbo.DM_ESTRUTURA ES
+                            on ES.Id_Estrutura = T.EstruturaId
+                        WHERE Es.CRNo = {valor[0]}
+                        AND T.Expirada = 0
+                        AND T.Status = 85
+                        AND MONTH(TerminoReal) = {month}
+                        AND YEAR(TerminoReal) = {year}
+                        AND T.Nome LIKE '%{valor[1]}%'
+                        GROUP BY T.Nome, R.Nome
+                        ORDER BY [Total] DESC'''
+        
+        conn = eg.connect() # Conecta ao DB
+
+        cns.gerarPng(conn, cons) # Gera o PNG com as Logos
+
+        # Envia a imagem
+        ph = bot.send_photo(msg.chat.id, open('temp.png', 'rb'))
+        bot.reply_to(ph, f"""Segue consulta do contrato {valor[0]} \n\n Data: {data.strftime('%d/%m/%Y - %H:%M')}""")
+
+    except Exception as e: bot.send_message(chat_id=msg.chat.id, text=f'Erro: {e}')
+
+# HELP US
+@bot.message_handler(commands=['help','ajuda'])
+def help_us(msg):
+    bot.reply_to(msg, msgP.help)
+
+# Gerar QR Codes
+@bot.message_handler(commands=['qrcode', 'qr'])
+def qrcode(msg):
+    cns.cns_qrcode(msg)
+
+# Consultar Visitas (Mes Atual ou Desejado)
+@bot.message_handler(commands=['visita'])
+def cons_visita(msg):
+    data = dt.now() # Data atual
+    # Separa por categorias
+    month = data.strftime('%m')
+    year = data.strftime('%Y')
+
+    valor = msg.textx
+    valor = valor.replace('/visita ','')
+    valor = valor.replace('/visita','')
+    valor = valor.split()
+
+    match len(valor):
+        case 0: 
+            bot.reply_to(msg, 'Consultando visitas referente ao mes atual, Aguarde!')
+            cons = f"""SELECT R.Nome, cr.Gerente, COUNT(R.Nome) as 'Total'
                 FROM Tarefa T with(nolock)
                 INNER JOIN Recurso R with(nolock)
                     on R.CodigoHash = T.FinalizadoPorHash
@@ -259,85 +239,40 @@ class CNS:
                 )
                 AND R.Nome <> 'Sistema'
                 AND MONTH(T.TerminoReal) = {month}
-                AND YEAR(T.TerminoReal) = {self.year}
-                GROUP BY R.Nome
-                ORDER BY COUNT(R.Nome) DESC"""
-        
-        engine = cns.connect(uid, pw, server)
-        conn = engine.connect()
-
-        img = bot.send_photo(
-            chat_id=msg.chat.id, 
-            photo=open(
-                self.gerarPng(conn, cons),'rb'
+                AND YEAR(T.TerminoReal) = {year}
+                GROUP BY R.Nome, cr.Gerente
+                ORDER BY cr.Gerente, COUNT(R.Nome) DESC"""
+        case 1: 
+            month = valor[0]
+            bot.reply_to(msg, f'Consultando visitas referente a data {month}!')
+            cons = f"""SELECT R.Nome, cr.Gerente, COUNT(R.Nome) as 'Total'
+                FROM Tarefa T with(nolock)
+                INNER JOIN Recurso R with(nolock)
+                    on R.CodigoHash = T.FinalizadoPorHash
+                INNER JOIN dw_vista.dbo.DM_ESTRUTURA Es with(nolock)
+                    on Es.Id_Estrutura = T.EstruturaId
+                INNER JOIN DW_Vista.dbo.DM_CR cr with(nolock)
+                    on cr.Id_CR = Es.Id_CR
+                WHERE cr.GerenteRegional = 'DENISE DOS SANTOS DIAS SILVA'
+                AND T.ChecklistId in (
+                    '7c7d1611-01f5-4f6a-9652-4e24bb1ce07a',
+                    '21368b38-a8f5-4793-8317-aca40a9489a5',
+                    '71bb4fa9-6f30-45df-9461-4b01534fbc12',
+                    'd44ee96b-262e-4d6e-b4a6-861cf0663c3e',
+                    '460e6d74-a6fe-4128-bc84-3d0455d30f45'
                 )
-            )
-        bot.reply_to(img, 'Segue visitas realizadas! 🥈✅')
+                AND R.Nome <> 'Sistema'
+                AND MONTH(T.TerminoReal) = {month}
+                AND YEAR(T.TerminoReal) = {year}
+                GROUP BY R.Nome, cr,Gerente
+                ORDER BY cr,Gerente, COUNT(R.Nome) DESC"""
 
-creds = []
-with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
-for i in cred: creds.append(cred[i])
-uid, server, API = creds
-pw = input('Digite sua senha: ')
+    conn = eg.connect()
+    cns.gerarPng(conn, cons)
 
-cns = CNS()
-bot = telebot.TeleBot(API)
-qr = QRCode()
-
-# Inicio
-@bot.message_handler(commands=['start','começar','init'])             
-def CNS_boasvindas(msg):
-    bot.reply_to(msg, msgP.boas_vindas.replace('$$USER', msg.from_user.first_name))
-
-# Consultar Total de Tarefas Dia
-@bot.message_handler(commands=['total','const'])
-def CNS_consultar(msg):
-    bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg, tipo=1)
-
-# Consultar Total de Tarefas Mês
-@bot.message_handler(commands=['totalm', 'constm'])
-def CNS_consultar(msg):
-    bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg, tipo=2)
-
-# Gerencia DIA
-@bot.message_handler(commands=['gerente','ger'])
-def CNS_gerencia(msg):
-    bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg, tipo=3)
-
-# Gerencia MES
-@bot.message_handler(commands=['gerentem','germ'])
-def help_us(msg):
-    bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg, tipo=4)
-
-# GerenciaRegional DIA
-@bot.message_handler(commands=['regional','reg'])
-def help_us(msg):
-    bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg, tipo=5)
-
-# GerenciaRegional MES
-@bot.message_handler(commands=['regionalm','regm'])
-def help_us(msg):
-    bot.reply_to(msg, 'Só um instante')
-    cns.consultar(msg, tipo=6)
-
-# HELP US
-@bot.message_handler(commands=['help','ajuda'])
-def help_us(msg):
-    bot.reply_to(msg, msgP.help)
-
-@bot.message_handler(commands=['qrcode', 'qr'])
-def qrcode(msg):
-    cns.cns_qrcode(msg)
-
-@bot.message_handler(commands=['visita'])
-def cons_visita(msg):
-    cns.cons_visita(msg)
-
+    ph = bot.send_photo(msg.chat.id, open('temp.png', 'rb'))
+    bot.reply_to(ph, 'Segue visitas realizadas! 🥈✅')
+    
 # Qualquer outra mensagem
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
@@ -345,6 +280,6 @@ def echo_message(message):
 
 try: system('cls')
 except: system('clear')
-
 print('CNS-Bot em execução!...')
 bot.infinity_polling()
+
