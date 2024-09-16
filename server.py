@@ -213,7 +213,7 @@ def cons_visita(msg):
     month = data.strftime('%m')
     year = data.strftime('%Y')
 
-    valor = msg.textx
+    valor = msg.text
     valor = valor.replace('/visita ','')
     valor = valor.replace('/visita','')
     valor = valor.split()
