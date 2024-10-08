@@ -72,7 +72,7 @@ class QRCode:
             FROM Estrutura ES
             INNER JOIN DW_Vista.dbo.DM_ESTRUTURA DE 
                 ON DE.ID_Estrutura = ES.Id
-            WHERE DE.CRNO = {cr}
+            WHERE DE.CRNO = '{cr}'
             AND Es.Tipo IN ('A','L')
             AND Es.Nivel {op_nivel} {nivel}"""
             
@@ -84,7 +84,7 @@ class QRCode:
             FROM Estrutura ES
             INNER JOIN DW_Vista.dbo.DM_ESTRUTURA DE
                 ON DE.ID_Estrutura = Es.Id
-            WHERE DE.CRNO = {cr}
+            WHERE DE.CRNO = '{cr}'
             AND Es.Tipo = '{tipo}' 
             AND Es.Nivel {op_nivel} {nivel}"""
 
