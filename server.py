@@ -8,7 +8,7 @@ from urllib.parse import quote_plus
 from sqlalchemy import create_engine
 from PIL import Image
 from datetime import datetime as dt
-from utils.creds import creds
+from utils.get_fb import req
 
 # Conectar
 class CNS:
@@ -64,10 +64,10 @@ class CNS:
                 else: bot.reply_to(msg, f'Erro encontrado: {nomeArquivo}')
         except Exception as e: bot.reply_to(msg, f'Erro ao Gerar QR: {e}')
 
-uid = creds['uid']
-server = creds['server']
-API = creds['API']
-pw = creds['pw']
+uid = req['uid'].strip()
+server = req['server'].strip()
+API = req['API'].strip()
+pw = req['pw'].strip()
 
 cns = CNS()
 bot = telebot.TeleBot(API)
