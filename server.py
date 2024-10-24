@@ -1,14 +1,14 @@
 import telebot
-import msgP
-import yaml
+import models.msgP as msgP
 from pandas import read_sql_query
 from dataframe_image import export
 from os import system
-from qrcode import QRCode
+from utils.qrcode import QRCode
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine
 from PIL import Image
 from datetime import datetime as dt
+from utils.creds import creds
 
 # Conectar
 class CNS:
@@ -24,7 +24,7 @@ class CNS:
             return engine
         except Exception as error: return error
 
-    def gerarPng(self, conn, consulta, arquivo='temp.png'):
+    def gerarPng(self, conn, consulta, arquivo='dist/temp.png'):
         df = read_sql_query(consulta, conn)
         export(df, filename=arquivo, max_cols=-1, max_rows=-1, table_conversion='selenium')
         dt = Image.open(arquivo)
@@ -64,10 +64,10 @@ class CNS:
                 else: bot.reply_to(msg, f'Erro encontrado: {nomeArquivo}')
         except Exception as e: bot.reply_to(msg, f'Erro ao Gerar QR: {e}')
 
-creds = []
-with open('utils/cred.yaml', 'r') as f: cred = yaml.load(f, yaml.FullLoader)
-for i in cred: creds.append(cred[i])
-uid, server, API, pw = creds
+uid = creds['user']
+server = creds['server']
+API = creds['API']
+pw = creds['pw']
 
 cns = CNS()
 bot = telebot.TeleBot(API)
