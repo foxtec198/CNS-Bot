@@ -64,7 +64,7 @@ class CNS:
                 else: bot.reply_to(msg, f'Erro encontrado: {nomeArquivo}')
         except Exception as e: bot.reply_to(msg, f'Erro ao Gerar QR: {e}')
 
-uid = creds['user']
+uid = creds['uid']
 server = creds['server']
 API = creds['API']
 pw = creds['pw']
