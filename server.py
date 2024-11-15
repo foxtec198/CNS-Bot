@@ -24,7 +24,7 @@ class CNS:
             return engine
         except Exception as error: return error
 
-    def gerarPng(self, conn, consulta, arquivo='dist/temp.png'):
+    def gerarPng(self, conn, consulta, arquivo='temp.png'):
         df = read_sql_query(consulta, conn)
         export(df, filename=arquivo, max_cols=-1, max_rows=-1, table_conversion='selenium')
         dt = Image.open(arquivo)
