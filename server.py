@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from PIL import Image
 from datetime import datetime as dt
 from utils.get_fb import req
+from time import sleep
 
 # Conectar
 class CNS:
@@ -65,12 +66,13 @@ class CNS:
         except Exception as e: bot.reply_to(msg, f'Erro ao Gerar QR: {e}')
 
 uid = req['uid'].strip()
-server = req['server'].strip()
-API = req['API'].strip()
-pw = req['pw'].strip()
+server = req['srv'].strip()
+API = req['api'].strip()
+print(API)
+pw = req['key'].strip()
 
 cns = CNS()
-bot = telebot.TeleBot(API)
+bot = telebot.TeleBot(token=API)
 qr = QRCode()
 eg = cns.connect(uid, pw, server) # Cria a engine de conexão
 
