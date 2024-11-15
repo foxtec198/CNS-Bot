@@ -351,4 +351,3 @@ try: system('cls')
 except: system('clear')
 print('CNS-Bot em execução!...')
 bot.infinity_polling()
-
